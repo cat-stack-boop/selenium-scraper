@@ -7,25 +7,26 @@ on:
 
 permissions:
   contents: write
+  issues: write
 
 jobs:
   scrape:
     runs-on: ubuntu-latest
     
     env:
-      PYTHON_VERSION: "3.10"  # Specify exact version
+      PYTHON_VERSION: "3.10"
       
     steps:
       - name: Check out the repository
         uses: actions/checkout@v3
         with:
-          fetch-depth: 2  # Fetch last 2 days for comparison
+          fetch-depth: 2
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-          cache: 'pip'  # Enable pip caching
+          cache: 'pip'
 
       - name: Install dependencies
         run: |
@@ -49,7 +50,7 @@ jobs:
 
       - name: Run Selenium Scraper
         run: python scrape_chatgpt.py
-        continue-on-error: true  # Continue even if comparison fails
+        continue-on-error: true
 
       - name: Check for changes
         id: check-changes
@@ -58,42 +59,39 @@ jobs:
             echo "CHANGES_FOUND=$(cat changes.json | jq 'any_values')" >> $GITHUB_ENV
           else
             echo "CHANGES_FOUND=false" >> $GITHUB_ENV
+            touch changes.json
           fi
 
+      - name: Create scraped_pages directory
+        run: mkdir -p scraped_pages
+
       - name: Commit and Push Changes
-        if: success()
         run: |
           git config --global user.email "feeltheagi@proton.me"
           git config --global user.name "Adam"
-          git add scraped_pages/ changes.json
           
-          if [ "${{ env.CHANGES_FOUND }}" == "true" ]; then
-            git commit -m "Automated Selenium scrape - Changes detected"
-          else
-            git commit -m "Automated Selenium scrape - No changes"
-          fi
+          # Stage any existing files
+          git add -A
           
-          git push
-
-      - name: Upload artifacts
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: scrape-results
-          path: |
-            scraped_pages/
-            changes.json
-            scraper.log
-          retention-days: 7
+          # Create commit even if no changes
+          git commit -m "Automated Selenium scrape - $(date +%Y%m%d)" || echo "No changes to commit"
+          
+          # Push if there are changes
+          git push || echo "No changes to push"
 
       - name: Notify on failure
         if: failure()
         uses: actions/github-script@v6
         with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: 'Scraper workflow failed',
-              body: `Workflow run failed: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
-            })
+            try {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: 'Scraper workflow failed',
+                body: `Workflow run failed: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+              });
+            } catch (error) {
+              console.log('Failed to create issue:', error);
+            }
