@@ -13,6 +13,10 @@ import os
 import datetime
 import subprocess
 import time
+import difflib
+import json
+from typing import Dict, Tuple, Optional
+from datetime import datetime, timedelta
 
 # Configure logging
 logging.basicConfig(
@@ -32,6 +36,7 @@ CHROME_DRIVER_PATH = os.getenv('CHROME_DRIVER_PATH', '/usr/bin/chromedriver')
 WEBSITE_URL = os.getenv('WEBSITE_URL', 'https://chat.openai.com')
 WAIT_TIMEOUT = int(os.getenv('WAIT_TIMEOUT', 20))
 REPO_PATH = os.getenv('REPO_PATH', '.')
+COMPARISON_OUTPUT = os.getenv('COMPARISON_OUTPUT', 'changes.json')
 
 def retry_on_exception(retries=3, delay=1):
     """Retry decorator with exponential backoff."""
@@ -145,15 +150,97 @@ def commit_changes(repo_path: str, commit_message: str) -> bool:
     finally:
         os.chdir(current_dir)
 
+def get_yesterday_file() -> Optional[str]:
+    """Find the most recent file from yesterday."""
+    yesterday = datetime.now() - timedelta(days=1)
+    yesterday_str = yesterday.strftime("%Y%m%d")
+    
+    if not os.path.exists('scraped_pages'):
+        return None
+        
+    files = [f for f in os.listdir('scraped_pages') if f.startswith('chat_openai_')]
+    yesterday_files = [f for f in files if yesterday_str in f]
+    
+    return os.path.join('scraped_pages', sorted(yesterday_files)[-1]) if yesterday_files else None
+
+def compare_pages(old_file: str, new_file: str) -> Dict:
+    """
+    Compare two HTML files and identify changes.
+    
+    Args:
+        old_file: Path to yesterday's HTML file
+        new_file: Path to today's HTML file
+        
+    Returns:
+        Dict containing changes found
+    """
+    try:
+        # Read both files
+        with open(old_file, 'r', encoding='utf-8') as f:
+            old_soup = BeautifulSoup(f.read(), 'html.parser')
+        with open(new_file, 'r', encoding='utf-8') as f:
+            new_soup = BeautifulSoup(f.read(), 'html.parser')
+            
+        changes = {
+            'new_features': [],
+            'removed_features': [],
+            'modified_elements': [],
+            'feature_flags': []
+        }
+        
+        # Compare feature flags (assuming they're in data attributes or specific elements)
+        old_flags = old_soup.find_all(attrs={'data-feature': True})
+        new_flags = new_soup.find_all(attrs={'data-feature': True})
+        
+        old_flag_set = {flag.get('data-feature') for flag in old_flags}
+        new_flag_set = {flag.get('data-feature') for flag in new_flags}
+        
+        changes['feature_flags'] = list(new_flag_set - old_flag_set)
+        
+        # Compare visible elements
+        old_elements = old_soup.find_all(['div', 'button', 'a'])
+        new_elements = new_soup.find_all(['div', 'button', 'a'])
+        
+        old_text = {elem.get_text().strip() for elem in old_elements if elem.get_text().strip()}
+        new_text = {elem.get_text().strip() for elem in new_elements if elem.get_text().strip()}
+        
+        changes['new_features'] = list(new_text - old_text)
+        changes['removed_features'] = list(old_text - new_text)
+        
+        # Save changes to file
+        with open(COMPARISON_OUTPUT, 'w', encoding='utf-8') as f:
+            json.dump(changes, f, indent=2)
+            
+        logging.info(f"Comparison results saved to {COMPARISON_OUTPUT}")
+        return changes
+        
+    except Exception as e:
+        logging.error(f"Error comparing pages: {e}")
+        return {}
+
 def main():
     """Main execution function."""
     try:
-        TIMESTAMP = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
         OUTPUT_FILE = f"scraped_pages/chat_openai_{TIMESTAMP}.html"
         
         if not scrape_and_save(WEBSITE_URL, OUTPUT_FILE):
             logging.error("Scraping failed")
             return
+            
+        # Find yesterday's file and compare
+        yesterday_file = get_yesterday_file()
+        if yesterday_file:
+            changes = compare_pages(yesterday_file, OUTPUT_FILE)
+            if changes:
+                logging.info("Changes detected:")
+                for category, items in changes.items():
+                    if items:
+                        logging.info(f"\n{category.replace('_', ' ').title()}:")
+                        for item in items:
+                            logging.info(f"- {item}")
+        else:
+            logging.info("No previous file found for comparison")
             
         if not commit_changes(REPO_PATH, f"Update scraped page at {TIMESTAMP}"):
             logging.error("Git operations failed")
