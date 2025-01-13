@@ -1,0 +1,40 @@
+name: Scrape ChatGPT with Selenium
+
+on:
+  schedule:
+    - cron: "0 2 * * *"  # Run daily at 2 AM UTC
+  workflow_dispatch:      # Manual trigger available
+
+permissions:
+  contents: write
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+
+      - name: Install dependencies
+        run: |
+          pip install selenium beautifulsoup4
+          sudo apt-get update
+          sudo apt-get install -y chromium-browser chromium-chromedriver
+          sudo ln -s /usr/bin/chromedriver /usr/local/bin/chromedriver
+          sudo ln -s /usr/bin/chromium-browser /usr/local/bin/chromium-browser
+
+      - name: Run Selenium Scraper
+        run: python scrape_chatgpt.py
+
+      - name: Push Changes
+        run: |
+          git config --global user.email "feeltheagi@proton.me"
+          git config --global user.name "Adam"
+          git add .
+          git commit -m "Automated Selenium scrape"
+          git push
