@@ -15,7 +15,7 @@ import subprocess
 import time
 import difflib
 import json
-from typing import Dict, Tuple, Optional
+from typing import Dict, Tuple, Optional, List, Any
 from datetime import datetime, timedelta
 
 # Configure logging
@@ -163,7 +163,7 @@ def get_yesterday_file() -> Optional[str]:
     
     return os.path.join('scraped_pages', sorted(yesterday_files)[-1]) if yesterday_files else None
 
-def compare_pages(old_file: str, new_file: str) -> Dict:
+def compare_pages(old_file: str, new_file: str) -> Dict[str, List[str]]:
     """
     Compare two HTML files and identify changes.
     

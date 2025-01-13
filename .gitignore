@@ -1,1 +1,27 @@
- 
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Logs
+*.log
+
+# Environment
+.env
+.venv/
+env/
+venv/
+
+# Output
+changes.json
+scraped_pages/*
+!scraped_pages/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db 
