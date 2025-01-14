@@ -85,12 +85,15 @@ def setup_undetected_driver(config: Config):
         logging.error(f"Failed to setup undetected Chrome driver: {str(e)}")
         return None
 
-def wait_for_page_load(driver, timeout: int = 30):
+def wait_for_page_load(driver, timeout: int = 60):
     """Wait for page to load and bypass CloudFlare."""
     try:
+        # Initial delay for CloudFlare
+        time.sleep(10)
+        
         # Wait for CloudFlare to finish
         WebDriverWait(driver, timeout).until(
-            lambda d: not "Just a moment..." in d.title
+            lambda d: not any(x in d.title.lower() for x in ["just a moment", "cloudflare"])
         )
         
         # Wait for main content
@@ -99,12 +102,12 @@ def wait_for_page_load(driver, timeout: int = 30):
         )
         
         # Additional delay to ensure JavaScript execution
-        time.sleep(5)
+        time.sleep(10)
         
         return True
     except TimeoutException:
-        logging.error("Timeout waiting for page to load")
-        return False
+        logging.warning("Timeout waiting for page to load - continuing anyway")
+        return True  # Continue even if timeout occurs
     except Exception as e:
         logging.error(f"Error waiting for page load: {str(e)}")
         return False

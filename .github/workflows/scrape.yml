@@ -31,7 +31,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install selenium beautifulsoup4 python-dotenv
+          pip install -r requirements.txt
           
       - name: Set up Chrome and ChromeDriver
         run: |
@@ -42,11 +42,13 @@ jobs:
           
       - name: Create .env file
         run: |
-          echo "CHROME_DRIVER_PATH=/usr/bin/chromedriver" >> .env
-          echo "WEBSITE_URL=https://chat.openai.com" >> .env
-          echo "WAIT_TIMEOUT=20" >> .env
-          echo "REPO_PATH=." >> .env
-          echo "COMPARISON_OUTPUT=changes.json" >> .env
+          cat > .env << EOL
+          CHROME_DRIVER_PATH=/usr/bin/chromedriver
+          WEBSITE_URL=https://chat.openai.com
+          WAIT_TIMEOUT=20
+          REPO_PATH=.
+          COMPARISON_OUTPUT=changes.json
+          EOL
 
       - name: Run Selenium Scraper
         run: python scrape_chatgpt.py
