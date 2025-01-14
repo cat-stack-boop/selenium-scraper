@@ -36,16 +36,16 @@ jobs:
       - name: Set up Chrome and ChromeDriver
         run: |
           sudo apt-get update
-          sudo apt-get install -y chromium-browser chromium-chromedriver
+          sudo apt-get install -y google-chrome-stable chromium-chromedriver
+          sudo ln -s /usr/bin/google-chrome /usr/local/bin/google-chrome
           sudo ln -s /usr/bin/chromedriver /usr/local/bin/chromedriver
-          sudo ln -s /usr/bin/chromium-browser /usr/local/bin/chromium-browser
           
       - name: Create .env file
         run: |
           cat > .env << EOL
-          CHROME_DRIVER_PATH=/usr/bin/chromedriver
+          CHROME_DRIVER_PATH=/usr/local/bin/chromedriver
           WEBSITE_URL=https://chat.openai.com
-          WAIT_TIMEOUT=20
+          WAIT_TIMEOUT=60
           REPO_PATH=.
           COMPARISON_OUTPUT=changes.json
           EOL
