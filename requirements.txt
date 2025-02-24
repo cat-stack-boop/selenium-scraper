@@ -1,4 +1,6 @@
 selenium>=4.15.2
-python-dotenv>=1.0.0
+python-dotenv>=1.0.0 
 undetected-chromedriver>=3.5.3
-beautifulsoup4>=4.12.2 
+beautifulsoup4>=4.12.2
+pytest>=7.4.0
+pytest-mock>=3.11.1

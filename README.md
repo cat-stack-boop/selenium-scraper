@@ -1,19 +1,21 @@
 # ChatGPT Selenium Scraper
 
-A robust Python script using Selenium to scrape ChatGPT pages and automatically commit changes to a git repository.
+A robust Python script using Selenium to track changes on ChatGPT's interface by performing daily screenshots and HTML captures with automatic comparison.
 
 ## Features
 
-- Automated web scraping using Selenium and Chrome in headless mode
-- Automatic git commit and push functionality
-- Configurable through environment variables
-- Comprehensive error handling and logging
-- Retry mechanism for network operations
-- Beautiful Soup integration for HTML parsing
+- **Advanced Selenium Integration**: Uses both regular Selenium and undetected-chromedriver for reliable access
+- **Anti-Detection Measures**: Multiple techniques to bypass bot detection
+- **CloudFlare Bypass**: Enhanced waiting strategies to handle protection pages
+- **Content Comparison**: Automatic HTML diff generation to detect UI changes
+- **GitHub Actions Integration**: Automated daily scraping with customizable schedule
+- **Smart Notifications**: Creates GitHub issues when significant changes are detected
+- **Optional Authentication**: Support for authenticated scraping with secure credential handling
+- **Comprehensive Error Handling**: Robust retry mechanisms and detailed logging
 
 ## Prerequisites
 
-- Python 3.7+
+- Python 3.10+
 - Chrome browser
 - ChromeDriver
 - Git (configured with push access to your repository)
@@ -22,13 +24,14 @@ A robust Python script using Selenium to scrape ChatGPT pages and automatically 
 
 1. Clone the repository: 
 
-bash
+```bash
 git clone <your-repo-url>
-cd Selenium-Test
+cd chatgpt-scraper
+```
 
 2. Install required packages:
 ```bash
-pip install selenium beautifulsoup4 python-dotenv
+pip install -r requirements.txt
 ```
 
 3. Install ChromeDriver:
@@ -39,8 +42,15 @@ pip install selenium beautifulsoup4 python-dotenv
 ```env
 CHROME_DRIVER_PATH=/usr/bin/chromedriver
 WEBSITE_URL=https://chat.openai.com
-WAIT_TIMEOUT=20
+WAIT_TIMEOUT=60
 REPO_PATH=.
+COMPARISON_OUTPUT=changes.json
+
+# Optional authentication
+# OPENAI_USERNAME=your_username
+# OPENAI_PASSWORD=your_password
+# USE_COOKIES=true
+# COOKIES_PATH=cookies.json
 ```
 
 ## Usage
@@ -52,56 +62,89 @@ python scrape_chatgpt.py
 
 The script will:
 1. Launch a headless Chrome browser
-2. Navigate to the specified URL
-3. Save the page source to a timestamped file in `scraped_pages/`
-4. Commit and push changes to the git repository
+2. Navigate to the ChatGPT website
+3. Handle any CloudFlare protection
+4. Optionally log in using provided credentials
+5. Save the page source to a timestamped file in `scraped_pages/`
+6. Compare with the previous scrape to detect changes
+7. Generate a changes.json file with diff information
+8. Commit and push changes to the git repository
 
-## Configuration
+### GitHub Actions Workflow
 
-Modify the `.env` file to customize:
-- `CHROME_DRIVER_PATH`: Path to ChromeDriver executable
-- `WEBSITE_URL`: Target URL to scrape
-- `WAIT_TIMEOUT`: Maximum wait time for page elements (seconds)
-- `REPO_PATH`: Path to git repository
+The included GitHub Actions workflow (`scrape.yml`) provides:
 
-## Logging
+- Automated daily scraping at 2 AM UTC (customizable)
+- Manual trigger option
+- Automatic push of changes
+- Issue creation for significant UI changes
 
-Logs are written to:
-- Console output
-- `scraper.log` file
-
-## Error Handling
-
-The script includes:
-- Retry mechanism for network operations
-- Specific exception handling for Selenium
-- Git operation error handling
-- Comprehensive logging
+To use with private credentials, set the following GitHub repository secrets:
+- `OPENAI_USERNAME`: Your ChatGPT username
+- `OPENAI_PASSWORD`: Your ChatGPT password
 
 ## Project Structure
 
 ```
-Selenium-Test/
-├── scrape_chatgpt.py    # Main script
+chatgpt-scraper/
+├── scrape_chatgpt.py    # Main script with enhanced scraping logic
+├── login_module.py      # Optional authentication module
+├── cleanup.py           # Utility to remove old scrapes
+├── tests/               # Test suite
+│   └── test_scraper.py  # Unit tests
+├── .github/workflows/   # GitHub Actions
+│   └── scrape.yml       # Workflow definition
 ├── .env                 # Configuration file
-├── README.md           # This file
-├── scraper.log         # Log file
-└── scraped_pages/      # Output directory
+├── .gitignore           # Git ignore rules
+├── README.md            # Documentation
+├── requirements.txt     # Dependencies
+└── scraped_pages/       # Output directory
 ```
 
-## Contributing
+## Advanced Configuration
 
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+### Timeouts and Retries
+
+- `WAIT_TIMEOUT`: Selenium wait timeout in seconds (default: 60)
+- The scraper includes built-in retry mechanisms for transient failures
+
+### Content Comparison Options
+
+The change detection looks for meaningful differences while ignoring noise like:
+- JavaScript changes
+- Meta tags
+- Styling elements
+
+### Running Tests
+
+```bash
+python -m pytest tests/
+```
+
+## Troubleshooting
+
+### CloudFlare Challenges
+
+If CloudFlare challenges persist:
+1. Increase the `WAIT_TIMEOUT` value
+2. Ensure your Chrome and ChromeDriver versions match
+3. Try running without headless mode for debugging
+
+### Authentication Issues
+
+If you're having login problems:
+1. Verify credentials are correct
+2. Delete any existing cookies.json file
+3. Run once with `USE_COOKIES=false` to generate fresh cookies
 
 ## License
 
-[Your chosen license]
+MIT License
 
 ## Author
 
-[Your name]
+Your Name
 
+---
+
+**Note**: This tool is for educational and research purposes only. Always respect OpenAI's terms of service and rate limits.

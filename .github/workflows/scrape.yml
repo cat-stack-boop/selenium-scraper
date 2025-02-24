@@ -49,6 +49,14 @@ jobs:
           REPO_PATH=.
           COMPARISON_OUTPUT=changes.json
           EOL
+          
+          # Add optional login credentials if secrets are available
+          if [ -n "${{ secrets.OPENAI_USERNAME }}" ] && [ -n "${{ secrets.OPENAI_PASSWORD }}" ]; then
+            echo "OPENAI_USERNAME=${{ secrets.OPENAI_USERNAME }}" >> .env
+            echo "OPENAI_PASSWORD=${{ secrets.OPENAI_PASSWORD }}" >> .env
+            echo "USE_COOKIES=true" >> .env
+            echo "COOKIES_PATH=.github/cookies.json" >> .env
+          fi
 
       - name: Run Selenium Scraper
         run: python scrape_chatgpt.py
@@ -58,9 +66,11 @@ jobs:
         id: check-changes
         run: |
           if [ -f changes.json ]; then
-            echo "CHANGES_FOUND=$(cat changes.json | jq 'any_values')" >> $GITHUB_ENV
+            echo "CHANGES_FOUND=$(cat changes.json | jq '.has_changes')" >> $GITHUB_ENV
+            echo "CHANGES_SUMMARY=$(cat changes.json | jq -r '.diff_summary' | head -n 10 | tr '\n' ' ')" >> $GITHUB_ENV
           else
             echo "CHANGES_FOUND=false" >> $GITHUB_ENV
+            echo "CHANGES_SUMMARY=No changes detected" >> $GITHUB_ENV
             touch changes.json
           fi
 
@@ -75,25 +85,51 @@ jobs:
           # Stage any existing files
           git add -A
           
-          # Create commit even if no changes
-          git commit -m "Automated Selenium scrape - $(date +%Y%m%d)" || echo "No changes to commit"
+          # Create commit with change summary if changes were found
+          if [ "$CHANGES_FOUND" = "true" ]; then
+            git commit -m "Automated Selenium scrape - Changes detected: $CHANGES_SUMMARY" || echo "No changes to commit"
+          else
+            git commit -m "Automated Selenium scrape - $(date +%Y%m%d)" || echo "No changes to commit"
+          fi
           
           # Push if there are changes
           git push || echo "No changes to push"
 
-      - name: Notify on failure
-        if: failure()
+      - name: Create issue for significant changes
+        if: env.CHANGES_FOUND == 'true'
         uses: actions/github-script@v6
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             try {
-              await github.rest.issues.create({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                title: 'Scraper workflow failed',
-                body: `Workflow run failed: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
-              });
+              const changes = require('./changes.json');
+              const additions = changes.additions || 0;
+              const deletions = changes.deletions || 0;
+              
+              // Only create an issue if there are significant changes
+              if (additions + deletions > 10) {
+                await github.rest.issues.create({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  title: `ChatGPT UI Changes Detected - ${new Date().toISOString().slice(0, 10)}`,
+                  body: `### ChatGPT UI Changes Detected
+
+#### Changes Summary
+- Additions: ${additions}
+- Deletions: ${deletions}
+                    
+#### Diff Preview
+\`\`\`diff
+${changes.diff_summary || "No diff summary available"}
+\`\`\`
+
+[View the full changes](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/commit/${context.sha})
+`
+                });
+                console.log('Issue created for significant changes');
+              } else {
+                console.log('Changes detected but not significant enough for issue creation');
+              }
             } catch (error) {
               console.log('Failed to create issue:', error);
             }
