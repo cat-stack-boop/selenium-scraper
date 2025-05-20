@@ -114,11 +114,13 @@ jobs:
                   title: `ChatGPT UI Changes Detected - ${new Date().toISOString().slice(0, 10)}`,
                   body: `### ChatGPT UI Changes Detected
 
-#### Changes Summary
+# Changes Summary
 - Additions: ${additions}
 - Deletions: ${deletions}
 
-#### Diff Preview
+
+# Diff Preview
+
 \`\`\`diff
 ${changes.diff_summary || "No diff summary available"}
 \`\`\`
