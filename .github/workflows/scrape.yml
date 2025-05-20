@@ -45,7 +45,7 @@ jobs:
           cat > .env << EOL
           CHROME_DRIVER_PATH=/usr/local/bin/chromedriver
           WEBSITE_URL=https://chat.openai.com
-          WAIT_TIMEOUT=60
+          WAIT_TIMEOUT=120 # Increased timeout
           REPO_PATH=.
           COMPARISON_OUTPUT=changes.json
           EOL
@@ -56,6 +56,13 @@ jobs:
             echo "OPENAI_PASSWORD=${{ secrets.OPENAI_PASSWORD }}" >> .env
             echo "USE_COOKIES=true" >> .env
             echo "COOKIES_PATH=.github/cookies.json" >> .env
+          fi
+
+          # Add CHROME_BINARY_PATH
+          if [ -n "${{ secrets.CHROME_BINARY_PATH }}" ]; then
+            echo "CHROME_BINARY_PATH=${{ secrets.CHROME_BINARY_PATH }}" >> .env
+          else
+            echo "CHROME_BINARY_PATH=/usr/bin/google-chrome" >> .env # Use the actual installation path
           fi
 
       - name: Run Selenium Scraper
@@ -113,4 +120,3 @@ jobs:
                   repo: context.repo.repo,
                   title: `ChatGPT UI Changes Detected - ${new Date().toISOString().slice(0, 10)}`,
                   body: `### ChatGPT UI Changes Detected
-
