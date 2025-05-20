@@ -117,7 +117,7 @@ jobs:
 #### Changes Summary
 - Additions: ${additions}
 - Deletions: ${deletions}
-                    
+
 #### Diff Preview
 \`\`\`diff
 ${changes.diff_summary || "No diff summary available"}
