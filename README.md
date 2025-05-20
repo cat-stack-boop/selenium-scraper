@@ -46,7 +46,12 @@ WAIT_TIMEOUT=60
 REPO_PATH=.
 COMPARISON_OUTPUT=changes.json
 
+# Optional: Specify custom path to Chrome binary (e.g., /opt/google/chrome/chrome)
+# If not set, Selenium will attempt to find it automatically.
+# CHROME_BINARY_PATH=/path/to/your/chrome
+
 # Optional authentication
+# If OPENAI_USERNAME and OPENAI_PASSWORD are provided, the script will attempt to log in.
 # OPENAI_USERNAME=your_username
 # OPENAI_PASSWORD=your_password
 # USE_COOKIES=true
@@ -64,7 +69,7 @@ The script will:
 1. Launch a headless Chrome browser
 2. Navigate to the ChatGPT website
 3. Handle any CloudFlare protection
-4. Optionally log in using provided credentials
+4. Attempt to log in if `OPENAI_USERNAME` and `OPENAI_PASSWORD` are set in `.env` or if `USE_COOKIES=true` and a valid `cookies.json` exists.
 5. Save the page source to a timestamped file in `scraped_pages/`
 6. Compare with the previous scrape to detect changes
 7. Generate a changes.json file with diff information
@@ -80,8 +85,9 @@ The included GitHub Actions workflow (`scrape.yml`) provides:
 - Issue creation for significant UI changes
 
 To use with private credentials, set the following GitHub repository secrets:
-- `OPENAI_USERNAME`: Your ChatGPT username
-- `OPENAI_PASSWORD`: Your ChatGPT password
+- `OPENAI_USERNAME`: Your ChatGPT username (if you want the script to log in)
+- `OPENAI_PASSWORD`: Your ChatGPT password (if you want the script to log in)
+- `CHROME_BINARY_PATH`: (Optional) Custom path to your Chrome binary.
 
 ## Project Structure
 
