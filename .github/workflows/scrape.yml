@@ -120,23 +120,3 @@ jobs:
                   repo: context.repo.repo,
                   title: `ChatGPT UI Changes Detected - ${new Date().toISOString().slice(0, 10)}`,
                   body: `### ChatGPT UI Changes Detected
-
-# Changes Summary
-- Additions: ${additions}
-- Deletions: ${deletions}
-
-# Diff Preview
-\`\`\`diff
-${changes.diff_summary || "No diff summary available"}
-\`\`\`
-
-[View the full changes](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/commit/${context.sha})
-`
-                });
-                console.log('Issue created for significant changes');
-              } else {
-                console.log('Changes detected but not significant enough for issue creation');
-              }
-            } catch (error) {
-              console.log('Failed to create issue:', error);
-            }
