@@ -16,7 +16,8 @@ def config():
         website_url='https://chat.openai.com',
         wait_timeout=10,
         repo_path='.',
-        comparison_output='test_changes.json'
+        comparison_output='test_changes.json',
+        chrome_binary_path='/custom/chrome/path'
     )
 
 @pytest.fixture
@@ -74,29 +75,158 @@ def test_compare_content(content_handler, create_test_files):
     assert changes['additions'] > 0
     assert 'diff_summary' in changes
 
+@patch('scrape_chatgpt.uc.ChromeOptions')
 @patch('scrape_chatgpt.uc.Chrome')
-def test_undetected_driver_setup(mock_chrome, config):
+def test_undetected_driver_setup(mock_chrome, mock_chrome_options_uc, config):
     """Test undetected driver setup."""
-    mock_driver = MagicMock()
-    mock_chrome.return_value = mock_driver
+    mock_driver_instance = MagicMock()
+    mock_chrome.return_value = mock_driver_instance
+    
+    mock_options_instance = MagicMock()
+    mock_chrome_options_uc.return_value = mock_options_instance
     
     scraper = SeleniumScraper(config)
     driver = scraper.setup_undetected_driver()
     
     assert driver is not None
-    assert mock_chrome.called
+    mock_chrome_options_uc.assert_called_once()
+    mock_chrome.assert_called_once_with(options=mock_options_instance)
+    assert mock_options_instance.binary_location == config.chrome_binary_path
 
-@patch('scrape_chatgpt.webdriver.Chrome')
-def test_regular_driver_setup(mock_chrome, config):
-    """Test regular driver setup."""
-    mock_driver = MagicMock()
-    mock_chrome.return_value = mock_driver
+    # Test with chrome_binary_path = None
+    config.chrome_binary_path = None
+    scraper_no_binary_path = SeleniumScraper(config)
+    mock_options_instance_no_bp = MagicMock()
+    mock_options_instance_no_bp.binary_location = None # Ensure it's not set by default
+    mock_chrome_options_uc.return_value = mock_options_instance_no_bp
     
+    scraper_no_binary_path.setup_undetected_driver()
+    # We expect binary_location to remain None if not set in config
+    assert mock_options_instance_no_bp.binary_location is None
+
+
+@patch('scrape_chatgpt.webdriver.ChromeOptions')
+@patch('scrape_chatgpt.webdriver.Chrome')
+def test_regular_driver_setup(mock_chrome, mock_chrome_options_webdriver, config):
+    """Test regular driver setup."""
+    mock_driver_instance = MagicMock()
+    mock_chrome.return_value = mock_driver_instance
+
+    mock_options_instance = MagicMock()
+    mock_chrome_options_webdriver.return_value = mock_options_instance
+
     scraper = SeleniumScraper(config)
     driver = scraper.setup_regular_driver()
-    
+
     assert driver is not None
-    assert mock_chrome.called
+    mock_chrome_options_webdriver.assert_called_once()
+    mock_chrome.assert_called_once_with(options=mock_options_instance)
+    assert mock_options_instance.binary_location == config.chrome_binary_path
+
+    # Test with chrome_binary_path = None
+    config.chrome_binary_path = None
+    scraper_no_binary_path = SeleniumScraper(config)
+    mock_options_instance_no_bp = MagicMock()
+    mock_options_instance_no_bp.binary_location = None # Ensure it's not set by default
+    mock_chrome_options_webdriver.return_value = mock_options_instance_no_bp
+    
+    scraper_no_binary_path.setup_regular_driver()
+    # We expect binary_location to remain None if not set in config
+    assert mock_options_instance_no_bp.binary_location is None
+
+# --- Tests for Login Functionality Integration ---
+
+@patch('scrape_chatgpt.LoginHandler')
+@patch('scrape_chatgpt.LoginConfig.from_env')
+@patch('scrape_chatgpt.webdriver.Chrome') # Mock the driver itself
+def test_login_integration_regular_driver(mock_chrome_driver, mock_login_config_from_env, mock_login_handler, config):
+    """Test login handler is called in regular driver when login is configured."""
+    mock_driver_instance = MagicMock()
+    mock_chrome_driver.return_value = mock_driver_instance
+    
+    # Configure LoginConfig mock to simulate login being enabled
+    mock_login_config_instance = MagicMock()
+    mock_login_config_instance.username = "testuser"
+    mock_login_config_instance.password = "testpass"
+    mock_login_config_instance.use_cookies = True
+    mock_login_config_from_env.return_value = mock_login_config_instance
+    
+    mock_handler_instance = MagicMock()
+    mock_login_handler.return_value = mock_handler_instance
+    
+    scraper = SeleniumScraper(config)
+    scraper.setup_regular_driver()
+    
+    mock_login_config_from_env.assert_called_once()
+    mock_login_handler.assert_called_once_with(mock_driver_instance, mock_login_config_instance, config.wait_timeout)
+    mock_handler_instance.handle_login.assert_called_once()
+
+@patch('scrape_chatgpt.LoginHandler')
+@patch('scrape_chatgpt.LoginConfig.from_env')
+@patch('scrape_chatgpt.webdriver.Chrome')
+def test_login_integration_regular_driver_no_login_configured(mock_chrome_driver, mock_login_config_from_env, mock_login_handler, config):
+    """Test login handler is NOT called in regular driver when login is not configured."""
+    mock_chrome_driver.return_value = MagicMock()
+    
+    # Configure LoginConfig mock to simulate login being disabled
+    mock_login_config_instance = MagicMock()
+    mock_login_config_instance.username = None
+    mock_login_config_instance.password = None
+    mock_login_config_instance.use_cookies = False
+    mock_login_config_from_env.return_value = mock_login_config_instance
+    
+    scraper = SeleniumScraper(config)
+    scraper.setup_regular_driver()
+    
+    mock_login_config_from_env.assert_called_once() # Still called to check
+    mock_login_handler.assert_not_called()
+
+
+@patch('scrape_chatgpt.LoginHandler')
+@patch('scrape_chatgpt.LoginConfig.from_env')
+@patch('scrape_chatgpt.uc.Chrome') # Mock the undetected driver
+def test_login_integration_undetected_driver(mock_uc_chrome_driver, mock_login_config_from_env, mock_login_handler, config):
+    """Test login handler is called in undetected driver when login is configured."""
+    mock_driver_instance = MagicMock()
+    mock_uc_chrome_driver.return_value = mock_driver_instance
+    
+    # Configure LoginConfig mock
+    mock_login_config_instance = MagicMock()
+    mock_login_config_instance.username = "testuser"
+    mock_login_config_instance.password = "testpass"
+    mock_login_config_instance.use_cookies = True
+    mock_login_config_from_env.return_value = mock_login_config_instance
+    
+    mock_handler_instance = MagicMock()
+    mock_login_handler.return_value = mock_handler_instance
+    
+    scraper = SeleniumScraper(config)
+    scraper.setup_undetected_driver()
+    
+    mock_login_config_from_env.assert_called_once()
+    mock_login_handler.assert_called_once_with(mock_driver_instance, mock_login_config_instance, config.wait_timeout)
+    mock_handler_instance.handle_login.assert_called_once()
+
+@patch('scrape_chatgpt.LoginHandler')
+@patch('scrape_chatgpt.LoginConfig.from_env')
+@patch('scrape_chatgpt.uc.Chrome')
+def test_login_integration_undetected_driver_no_login_configured(mock_uc_chrome_driver, mock_login_config_from_env, mock_login_handler, config):
+    """Test login handler is NOT called in undetected driver when login is not configured."""
+    mock_uc_chrome_driver.return_value = MagicMock()
+    
+    # Configure LoginConfig mock
+    mock_login_config_instance = MagicMock()
+    mock_login_config_instance.username = None
+    mock_login_config_instance.password = None
+    mock_login_config_instance.use_cookies = False
+    mock_login_config_from_env.return_value = mock_login_config_instance
+    
+    scraper = SeleniumScraper(config)
+    scraper.setup_undetected_driver()
+    
+    mock_login_config_from_env.assert_called_once()
+    mock_login_handler.assert_not_called()
+
 
 def test_config_from_env():
     """Test config loading from environment."""
@@ -104,9 +234,21 @@ def test_config_from_env():
     os.environ['CHROME_DRIVER_PATH'] = '/test/path'
     os.environ['WEBSITE_URL'] = 'https://test.com'
     os.environ['WAIT_TIMEOUT'] = '30'
+    os.environ['CHROME_BINARY_PATH'] = '/env/chrome/path'
     
     config = Config.from_env()
     
     assert config.chrome_driver_path == '/test/path'
     assert config.website_url == 'https://test.com'
     assert config.wait_timeout == 30
+    assert config.chrome_binary_path == '/env/chrome/path'
+
+    # Test default
+    del os.environ['CHROME_BINARY_PATH']
+    config_default_binary = Config.from_env()
+    assert config_default_binary.chrome_binary_path is None
+    
+    # Clean up other env vars
+    del os.environ['CHROME_DRIVER_PATH']
+    del os.environ['WEBSITE_URL']
+    del os.environ['WAIT_TIMEOUT']

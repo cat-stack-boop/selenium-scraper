@@ -25,3 +25,6 @@ scraped_pages/*
 # OS
 .DS_Store
 Thumbs.db 
+
+# Cookies file used by GitHub Actions
+.github/cookies.json
