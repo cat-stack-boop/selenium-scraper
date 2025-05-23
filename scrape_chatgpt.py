@@ -61,8 +61,7 @@ class SeleniumScraper:
         
         try:
             driver = webdriver.Chrome(options=chrome_options)
-            driver.delete_all_cookies() # Ensure a clean session before login/navigation
-            
+
             login_config = LoginConfig.from_env()
             if login_config.username or login_config.password or login_config.use_cookies:
                 logger.info("Attempting login...")
@@ -93,7 +92,7 @@ class SeleniumScraper:
                 chrome_options.binary_location = self.config.chrome_binary_path
             
             driver = uc.Chrome(options=chrome_options)
-            driver.delete_all_cookies() # Ensure a clean session before login/navigation
+
             
             login_config = LoginConfig.from_env()
             if login_config.username or login_config.password or login_config.use_cookies:
