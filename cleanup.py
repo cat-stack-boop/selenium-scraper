@@ -10,7 +10,7 @@ def cleanup_old_files(directory: str, days: int = 30) -> None:
         for filename in os.listdir(directory):
             filepath = os.path.join(directory, filename)
             if os.path.isfile(filepath):
-                file_time = datetime.fromtimestamp(os.path.getctime(filepath))
+                file_time = datetime.fromtimestamp(os.path.getmtime(filepath))
                 if file_time < cutoff_date:
                     os.remove(filepath)
                     logging.info(f"Removed old file: {filepath}")

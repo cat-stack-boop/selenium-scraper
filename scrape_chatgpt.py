@@ -16,6 +16,8 @@ from selenium.common.exceptions import TimeoutException, WebDriverException
 import undetected_chromedriver as uc
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
+from config import Config
+from login import LoginHandler, LoginConfig
 
 # Configure logging
 logging.basicConfig(
@@ -27,26 +29,6 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
-
-@dataclass
-class Config:
-    chrome_driver_path: str
-    website_url: str
-    wait_timeout: int
-    repo_path: str
-    comparison_output: str
-    
-    @classmethod
-    def from_env(cls) -> 'Config':
-        """Load configuration from environment variables."""
-        load_dotenv()
-        return cls(
-            chrome_driver_path=os.getenv('CHROME_DRIVER_PATH', '/usr/bin/chromedriver'),
-            website_url=os.getenv('WEBSITE_URL', 'https://chat.openai.com'),
-            wait_timeout=int(os.getenv('WAIT_TIMEOUT', '60')),
-            repo_path=os.getenv('REPO_PATH', '.'),
-            comparison_output=os.getenv('COMPARISON_OUTPUT', 'changes.json')
-        )
 
 class SeleniumScraper:
     def __init__(self, config: Config):
@@ -70,7 +52,8 @@ class SeleniumScraper:
         chrome_options.add_argument('user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
         
         # Set binary location
-        chrome_options.binary_location = "/usr/bin/google-chrome"
+        if self.config.chrome_binary_path:
+            chrome_options.binary_location = self.config.chrome_binary_path
         
         # Additional experimental options
         chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
@@ -78,6 +61,17 @@ class SeleniumScraper:
         
         try:
             driver = webdriver.Chrome(options=chrome_options)
+            driver.delete_all_cookies() # Ensure a clean session before login/navigation
+            
+            login_config = LoginConfig.from_env()
+            if login_config.username or login_config.password or login_config.use_cookies:
+                logger.info("Attempting login...")
+                login_handler = LoginHandler(driver, login_config, self.config.wait_timeout)
+                if not login_handler.handle_login():
+                    logger.warning("Login failed. Proceeding without login.")
+                else:
+                    logger.info("Login successful or already logged in.")
+            
             # Execute CDP commands to prevent detection
             driver.execute_cdp_cmd('Network.setUserAgentOverride', {
                 "userAgent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
@@ -95,9 +89,21 @@ class SeleniumScraper:
             chrome_options.add_argument('--headless=new')
             chrome_options.add_argument('--no-sandbox')
             chrome_options.add_argument('--disable-dev-shm-usage')
-            chrome_options.binary_location = "/usr/bin/google-chrome"
+            if self.config.chrome_binary_path:
+                chrome_options.binary_location = self.config.chrome_binary_path
             
             driver = uc.Chrome(options=chrome_options)
+            driver.delete_all_cookies() # Ensure a clean session before login/navigation
+            
+            login_config = LoginConfig.from_env()
+            if login_config.username or login_config.password or login_config.use_cookies:
+                logger.info("Attempting login with undetected-chromedriver...")
+                login_handler = LoginHandler(driver, login_config, self.config.wait_timeout)
+                if not login_handler.handle_login():
+                    logger.warning("Login failed with undetected-chromedriver. Proceeding without login.")
+                else:
+                    logger.info("Login successful or already logged in with undetected-chromedriver.")
+            
             return driver
         except Exception as e:
             logger.error(f"Failed to setup undetected Chrome driver: {str(e)}")
@@ -161,9 +167,6 @@ class SeleniumScraper:
         
         while retry_count < max_retries:
             try:
-                # Clear cookies and cache
-                self.driver.delete_all_cookies()
-                
                 # Navigate to the page
                 self.driver.get(self.config.website_url)
                 
