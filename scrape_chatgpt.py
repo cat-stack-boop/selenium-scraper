@@ -61,7 +61,7 @@ class SeleniumScraper:
         
         try:
             driver = webdriver.Chrome(options=chrome_options)
-            
+
             login_config = LoginConfig.from_env()
             if login_config.username or login_config.password or login_config.use_cookies:
                 logger.info("Attempting login...")
@@ -92,6 +92,7 @@ class SeleniumScraper:
                 chrome_options.binary_location = self.config.chrome_binary_path
             
             driver = uc.Chrome(options=chrome_options)
+
             
             login_config = LoginConfig.from_env()
             if login_config.username or login_config.password or login_config.use_cookies:
@@ -165,9 +166,6 @@ class SeleniumScraper:
         
         while retry_count < max_retries:
             try:
-                # Clear cookies and cache
-                self.driver.delete_all_cookies()
-                
                 # Navigate to the page
                 self.driver.get(self.config.website_url)
                 
