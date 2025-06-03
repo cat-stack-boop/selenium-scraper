@@ -238,13 +238,13 @@ def test_login_integration_undetected_driver_no_login_configured(mock_uc_chrome_
     mock_login_handler.assert_not_called()
 
 
-def test_config_from_env():
+def test_config_from_env(monkeypatch):
     """Test config loading from environment."""
     # Set test environment variables
-    os.environ['CHROME_DRIVER_PATH'] = '/test/path'
-    os.environ['WEBSITE_URL'] = 'https://test.com'
-    os.environ['WAIT_TIMEOUT'] = '30'
-    os.environ['CHROME_BINARY_PATH'] = '/env/chrome/path'
+    monkeypatch.setenv('CHROME_DRIVER_PATH', '/test/path')
+    monkeypatch.setenv('WEBSITE_URL', 'https://test.com')
+    monkeypatch.setenv('WAIT_TIMEOUT', '30')
+    monkeypatch.setenv('CHROME_BINARY_PATH', '/env/chrome/path')
     
     config = Config.from_env()
     
@@ -254,11 +254,6 @@ def test_config_from_env():
     assert config.chrome_binary_path == '/env/chrome/path'
 
     # Test default
-    del os.environ['CHROME_BINARY_PATH']
+    monkeypatch.delenv('CHROME_BINARY_PATH', raising=False)
     config_default_binary = Config.from_env()
     assert config_default_binary.chrome_binary_path is None
-    
-    # Clean up other env vars
-    del os.environ['CHROME_DRIVER_PATH']
-    del os.environ['WEBSITE_URL']
-    del os.environ['WAIT_TIMEOUT']
