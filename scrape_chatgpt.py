@@ -236,7 +236,7 @@ class ContentHandler:
             return None
     
     def get_previous_file(self) -> Optional[Path]:
-        """Get the most recent file from the previous day."""
+        """Return the most recently scraped file regardless of date."""
         try:
             output_dir = Path(self.config.repo_path) / 'scraped_pages'
             if not output_dir.exists():
