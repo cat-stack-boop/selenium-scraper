@@ -87,11 +87,12 @@ def test_undetected_driver_setup(mock_chrome, mock_chrome_options_uc, config):
     
     scraper = SeleniumScraper(config)
     driver = scraper.setup_undetected_driver()
-    
+
     assert driver is not None
     mock_chrome_options_uc.assert_called_once()
     mock_chrome.assert_called_once_with(options=mock_options_instance)
     assert mock_options_instance.binary_location == config.chrome_binary_path
+    mock_driver_instance.get.assert_called_once_with(config.website_url)
 
     # Test with chrome_binary_path = None
     config.chrome_binary_path = None
@@ -122,6 +123,7 @@ def test_regular_driver_setup(mock_chrome, mock_chrome_options_webdriver, config
     mock_chrome_options_webdriver.assert_called_once()
     mock_chrome.assert_called_once_with(options=mock_options_instance)
     assert mock_options_instance.binary_location == config.chrome_binary_path
+    mock_driver_instance.get.assert_called_once_with(config.website_url)
 
     # Test with chrome_binary_path = None
     config.chrome_binary_path = None
@@ -156,10 +158,11 @@ def test_login_integration_regular_driver(mock_chrome_driver, mock_login_config_
     
     scraper = SeleniumScraper(config)
     scraper.setup_regular_driver()
-    
+
     mock_login_config_from_env.assert_called_once()
     mock_login_handler.assert_called_once_with(mock_driver_instance, mock_login_config_instance, config.wait_timeout)
     mock_handler_instance.handle_login.assert_called_once()
+    mock_driver_instance.get.assert_called_once_with(config.website_url)
 
 @patch('scrape_chatgpt.LoginHandler')
 @patch('scrape_chatgpt.LoginConfig.from_env')
@@ -177,9 +180,10 @@ def test_login_integration_regular_driver_no_login_configured(mock_chrome_driver
     
     scraper = SeleniumScraper(config)
     scraper.setup_regular_driver()
-    
+
     mock_login_config_from_env.assert_called_once() # Still called to check
     mock_login_handler.assert_not_called()
+    mock_chrome_driver.return_value.get.assert_called_once_with(config.website_url)
 
 
 @patch('scrape_chatgpt.LoginHandler')
@@ -202,10 +206,11 @@ def test_login_integration_undetected_driver(mock_uc_chrome_driver, mock_login_c
     
     scraper = SeleniumScraper(config)
     scraper.setup_undetected_driver()
-    
+
     mock_login_config_from_env.assert_called_once()
     mock_login_handler.assert_called_once_with(mock_driver_instance, mock_login_config_instance, config.wait_timeout)
     mock_handler_instance.handle_login.assert_called_once()
+    mock_driver_instance.get.assert_called_once_with(config.website_url)
 
 @patch('scrape_chatgpt.LoginHandler')
 @patch('scrape_chatgpt.LoginConfig.from_env')
@@ -223,9 +228,10 @@ def test_login_integration_undetected_driver_no_login_configured(mock_uc_chrome_
     
     scraper = SeleniumScraper(config)
     scraper.setup_undetected_driver()
-    
+
     mock_login_config_from_env.assert_called_once()
     mock_login_handler.assert_not_called()
+    mock_uc_chrome_driver.return_value.get.assert_called_once_with(config.website_url)
 
 
 def test_config_from_env():

@@ -61,6 +61,7 @@ class SeleniumScraper:
         
         try:
             driver = webdriver.Chrome(options=chrome_options)
+            driver.get(self.config.website_url)
 
             login_config = LoginConfig.from_env()
             if login_config.username or login_config.password or login_config.use_cookies:
@@ -92,8 +93,8 @@ class SeleniumScraper:
                 chrome_options.binary_location = self.config.chrome_binary_path
             
             driver = uc.Chrome(options=chrome_options)
+            driver.get(self.config.website_url)
 
-            
             login_config = LoginConfig.from_env()
             if login_config.username or login_config.password or login_config.use_cookies:
                 logger.info("Attempting login with undetected-chromedriver...")
