@@ -26,7 +26,7 @@ A robust Python script using Selenium to track changes on ChatGPT's interface by
 
 ```bash
 git clone <your-repo-url>
-cd chatgpt-scraper
+cd selenium-scraper
 ```
 
 2. Install required packages:
