@@ -94,7 +94,7 @@ To use with private credentials, set the following GitHub repository secrets:
 ```
 chatgpt-scraper/
 ├── scrape_chatgpt.py    # Main script with enhanced scraping logic
-├── login_module.py      # Optional authentication module
+├── login.py             # Optional authentication module
 ├── cleanup.py           # Utility to remove old scrapes
 ├── tests/               # Test suite
 │   └── test_scraper.py  # Unit tests
