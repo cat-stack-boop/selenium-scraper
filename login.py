@@ -2,7 +2,7 @@ import time
 import logging
 import os
 from pathlib import Path
-from typing import Optional, Dict
+from typing import Optional
 from dataclasses import dataclass
 
 from selenium.webdriver.common.by import By

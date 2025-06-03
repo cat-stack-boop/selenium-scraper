@@ -1,6 +1,5 @@
 import pytest
 import os
-import json
 from pathlib import Path
 from datetime import datetime, timedelta
 from unittest.mock import patch, MagicMock, ANY

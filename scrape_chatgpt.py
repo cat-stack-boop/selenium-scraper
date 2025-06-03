@@ -6,7 +6,6 @@ import difflib
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional, Dict, Any, Tuple, List
-from dataclasses import dataclass
 
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
@@ -16,7 +15,6 @@ from selenium.webdriver.common.by import By
 from selenium.common.exceptions import TimeoutException, WebDriverException
 import undetected_chromedriver as uc
 from bs4 import BeautifulSoup
-from dotenv import load_dotenv
 from config import Config
 from login import LoginHandler, LoginConfig
 
