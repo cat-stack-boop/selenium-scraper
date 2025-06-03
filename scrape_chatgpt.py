@@ -9,6 +9,7 @@ from typing import Optional, Dict, Any, Tuple, List
 from dataclasses import dataclass
 
 from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
@@ -60,7 +61,8 @@ class SeleniumScraper:
         chrome_options.add_experimental_option('useAutomationExtension', False)
         
         try:
-            driver = webdriver.Chrome(options=chrome_options)
+            service = Service(self.config.chrome_driver_path)
+            driver = webdriver.Chrome(service=service, options=chrome_options)
 
             login_config = LoginConfig.from_env()
             if login_config.username or login_config.password or login_config.use_cookies:
@@ -91,7 +93,7 @@ class SeleniumScraper:
             if self.config.chrome_binary_path:
                 chrome_options.binary_location = self.config.chrome_binary_path
             
-            driver = uc.Chrome(options=chrome_options)
+            driver = uc.Chrome(options=chrome_options, driver_executable_path=self.config.chrome_driver_path)
 
             
             login_config = LoginConfig.from_env()
