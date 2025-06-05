@@ -136,6 +136,13 @@ If CloudFlare challenges persist:
 2. Ensure your Chrome and ChromeDriver versions match
 3. Try running without headless mode for debugging
 
+### Chrome Startup Issues
+
+If you encounter a `DevToolsActivePort file doesn't exist` error, make sure
+Chrome is launched with the `--remote-debugging-port=9222` flag. The script adds
+this option automatically, but outdated Chrome/ChromeDriver versions can still
+trigger the issue.
+
 ### Authentication Issues
 
 If you're having login problems:
