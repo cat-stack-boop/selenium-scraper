@@ -56,8 +56,8 @@ class LoginHandler:
                 
             logger.info(f"Cookies saved to {cookies_path}")
             return True
-        except Exception as e:
-            logger.error(f"Error saving cookies: {str(e)}")
+        except Exception:
+            logger.exception("Error saving cookies")
             return False
     
     def load_cookies(self) -> bool:
@@ -85,8 +85,8 @@ class LoginHandler:
                 
             logger.info(f"Cookies loaded from {cookies_path}")
             return True
-        except Exception as e:
-            logger.error(f"Error loading cookies: {str(e)}")
+        except Exception:
+            logger.exception("Error loading cookies")
             return False
     
     def check_login_status(self) -> bool:
@@ -117,8 +117,8 @@ class LoginHandler:
                 logger.info("No user menu found, might not be logged in")
                 return False
                 
-        except Exception as e:
-            logger.error(f"Error checking login status: {str(e)}")
+        except Exception:
+            logger.exception("Error checking login status")
             return False
     
     def perform_login(self) -> bool:
@@ -169,8 +169,8 @@ class LoginHandler:
             
             # Check if logged in
             return self.check_login_status()
-        except Exception as e:
-            logger.error(f"Error during login process: {str(e)}")
+        except Exception:
+            logger.exception("Error during login process")
             return False
     
     def handle_login(self) -> bool:

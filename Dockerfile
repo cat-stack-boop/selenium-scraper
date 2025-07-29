@@ -14,8 +14,13 @@ COPY requirements.txt /
 RUN pip install --no-cache-dir -r /requirements.txt
 
 # ---------- final stage ----------------------------------------------------
-FROM build as final
+FROM python:3.11-slim as final
+COPY --from=build /usr/local/bin/chromedriver /usr/local/bin/chromedriver
+COPY --from=build /usr/bin/google-chrome /usr/bin/google-chrome
+COPY --from=build /opt/google /opt/google
 WORKDIR /app
+COPY requirements.txt /requirements.txt
+RUN pip install --no-cache-dir -r /requirements.txt
 COPY . .
 ENV PYTHONUNBUFFERED=1 \
     CHROME_DRIVER_PATH=/usr/local/bin/chromedriver \

@@ -4,13 +4,22 @@ import os
 import random
 from dotenv import load_dotenv
 from fake_useragent import UserAgent
+from distutils.util import strtobool
 
 # ----------------------- runtime switches ----------------------------------
-HEADLESS = os.getenv("HEADLESS", "true").lower() != "false"
+HEADLESS = bool(strtobool(os.getenv("HEADLESS", "1")))  # accepts 0/1 yes/no true/false
 
 # ----------------------- UA / viewport pools -------------------------------
-_ua = UserAgent()
-USER_AGENT = _ua.random     # each import gives a new UA
+UA_FALLBACK = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/118.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/117.0 Safari/537.36",
+]
+try:
+    USER_AGENT = UserAgent().random
+except Exception:
+    USER_AGENT = random.choice(UA_FALLBACK)
 
 VIEWPORTS = [
     (1920, 1080),
