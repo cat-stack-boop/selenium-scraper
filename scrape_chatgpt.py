@@ -11,6 +11,7 @@ from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import TimeoutException, WebDriverException
 import undetected_chromedriver as uc
@@ -60,7 +61,10 @@ class SeleniumScraper:
         chrome_options.add_experimental_option('useAutomationExtension', False)
         
         try:
-            service = Service(self.config.chrome_driver_path)
+            if self.config.chrome_driver_path:
+                service = Service(self.config.chrome_driver_path)
+            else:
+                service = Service(ChromeDriverManager().install())
             driver = webdriver.Chrome(service=service, options=chrome_options)
 
             login_config = LoginConfig.from_env()
@@ -93,7 +97,8 @@ class SeleniumScraper:
             if self.config.chrome_binary_path:
                 chrome_options.binary_location = self.config.chrome_binary_path
             
-            driver = uc.Chrome(options=chrome_options, driver_executable_path=self.config.chrome_driver_path)
+            driver_path = self.config.chrome_driver_path or ChromeDriverManager().install()
+            driver = uc.Chrome(options=chrome_options, driver_executable_path=driver_path)
 
             
             login_config = LoginConfig.from_env()
@@ -261,11 +266,17 @@ class ContentHandler:
     def _extract_main_content(self, html: str) -> str:
         """Extract the main content from HTML to reduce noise in diff."""
         try:
-            soup = BeautifulSoup(html, 'html.parser')
-            
-            # Remove script and style elements that might contain changing content
-            for element in soup(['script', 'style', 'noscript', 'meta', 'link']):
+            soup = BeautifulSoup(html, 'lxml')
+
+            # Remove script, style and dynamic elements
+            for element in soup(['script', 'style', 'noscript', 'meta', 'link', 'time']):
                 element.decompose()
+
+            # Strip dynamic attributes that often change between sessions
+            for tag in soup.find_all(True):
+                for attr in list(tag.attrs):
+                    if attr.startswith('data-') or attr == 'id':
+                        del tag.attrs[attr]
             
             # Extract body content
             body = soup.body
