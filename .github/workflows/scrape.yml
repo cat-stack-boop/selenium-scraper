@@ -3,94 +3,26 @@ name: Scrape ChatGPT with Selenium
 on:
   schedule:
     - cron: "0 2 * * *"  # Run daily at 2 AM UTC
-  workflow_dispatch:      # Manual trigger available
+  workflow_dispatch:
 
 permissions:
   contents: write
-  issues: write
 
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    
+    strategy:
+      matrix:
+        chrome-channel: [ stable, beta, dev ]
+    env:
+      OPENAI_USERNAME: ${{ secrets.OPENAI_USERNAME }}
+      OPENAI_PASSWORD: ${{ secrets.OPENAI_PASSWORD }}
     steps:
-      - name: Check out the repository
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 2
-
-      - name: Build Docker image
-        run: docker build -t chatgpt-scraper .
-          
-      - name: Create .env file
+      - uses: actions/checkout@v4
+      - name: Build & scrape (${{ matrix.chrome-channel }})
         run: |
-          cat > .env << EOL
-          WEBSITE_URL=https://chat.openai.com
-          WAIT_TIMEOUT=120 # Increased timeout
-          REPO_PATH=.
-          COMPARISON_OUTPUT=changes.json
-          EOL
-          
-          # Add optional login credentials if secrets are available
-          if [ -n "${{ secrets.OPENAI_USERNAME }}" ] && [ -n "${{ secrets.OPENAI_PASSWORD }}" ]; then
-            echo "OPENAI_USERNAME=${{ secrets.OPENAI_USERNAME }}" >> .env
-            echo "OPENAI_PASSWORD=${{ secrets.OPENAI_PASSWORD }}" >> .env
-            echo "USE_COOKIES=true" >> .env
-            echo "COOKIES_PATH=.github/cookies.json" >> .env
-          fi
-
-      - name: Run scraper container
-        run: docker run --rm --env-file .env -v ${{ github.workspace }}:/app chatgpt-scraper
-        continue-on-error: true
-
-      - name: Check for changes
-        id: check-changes
-        run: |
-          if [ -f changes.json ]; then
-            echo "CHANGES_FOUND=$(cat changes.json | jq '.has_changes')" >> $GITHUB_ENV
-            echo "CHANGES_SUMMARY=$(cat changes.json | jq -r '.diff_summary' | head -n 10 | tr '\n' ' ')" >> $GITHUB_ENV
-          else
-            echo "CHANGES_FOUND=false" >> $GITHUB_ENV
-            echo "CHANGES_SUMMARY=No changes detected" >> $GITHUB_ENV
-            touch changes.json
-          fi
-
-      - name: Create scraped_pages directory
-        run: mkdir -p scraped_pages
-
-      - name: Commit and Push Changes
-        run: |
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git config --global user.name "GitHub Actions"
-          
-          # Stage any existing files
-          git add -A
-          
-          # Create commit with change summary if changes were found
-          if [ "$CHANGES_FOUND" = "true" ]; then
-            git commit -m "Automated Selenium scrape - Changes detected: $CHANGES_SUMMARY" || echo "No changes to commit"
-          else
-            git commit -m "Automated Selenium scrape - $(date +%Y%m%d)" || echo "No changes to commit"
-          fi
-          
-          # Push if there are changes
-          git push || echo "No changes to push"
-
-      - name: Create issue for significant changes
-        if: env.CHANGES_FOUND == 'true'
-        uses: actions/github-script@v6
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            try {
-              const changes = require('./changes.json');
-              const additions = changes.additions || 0;
-              const deletions = changes.deletions || 0;
-              
-              // Only create an issue if there are significant changes
-              if (additions + deletions > 10) {
-                await github.rest.issues.create({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  title: `ChatGPT UI Changes Detected - ${new Date().toISOString().slice(0, 10)}`,
-                  body: `### ChatGPT UI Changes Detected
+          docker build --build-arg CHROME_CHANNEL=${{ matrix.chrome-channel }} -t scraper .
+          docker run --rm \
+            -e OPENAI_USERNAME \
+            -e OPENAI_PASSWORD \
+            scraper

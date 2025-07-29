@@ -1,0 +1,5 @@
+# keep the image lean
+.git
+scraped_pages/
+.pytest_cache/
+__pycache__/

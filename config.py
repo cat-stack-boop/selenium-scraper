@@ -1,7 +1,24 @@
 from dataclasses import dataclass
 from typing import Optional
 import os
+import random
 from dotenv import load_dotenv
+from fake_useragent import UserAgent
+
+# ----------------------- runtime switches ----------------------------------
+HEADLESS = os.getenv("HEADLESS", "true").lower() != "false"
+
+# ----------------------- UA / viewport pools -------------------------------
+_ua = UserAgent()
+USER_AGENT = _ua.random     # each import gives a new UA
+
+VIEWPORTS = [
+    (1920, 1080),
+    (1366, 768),
+    (1280, 800),
+    (1600, 900),
+]
+VIEWPORT = random.choice(VIEWPORTS)
 
 @dataclass
 class Config:
@@ -22,4 +39,7 @@ class Config:
             repo_path=os.getenv('REPO_PATH', '.'),
             comparison_output=os.getenv('COMPARISON_OUTPUT', 'changes.json'),
             chrome_binary_path=os.getenv('CHROME_BINARY_PATH', None)
-        ) 
+        )
+
+OPENAI_USERNAME = os.getenv("OPENAI_USERNAME")
+OPENAI_PASSWORD = os.getenv("OPENAI_PASSWORD")
