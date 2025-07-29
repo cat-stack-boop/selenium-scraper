@@ -13,37 +13,18 @@ jobs:
   scrape:
     runs-on: ubuntu-latest
     
-    env:
-      PYTHON_VERSION: "3.10"
-      
     steps:
       - name: Check out the repository
         uses: actions/checkout@v3
         with:
           fetch-depth: 2
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          cache: 'pip'
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          
-      - name: Set up Chrome and ChromeDriver
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y google-chrome-stable chromium-chromedriver
-          sudo ln -s /usr/bin/google-chrome /usr/local/bin/google-chrome
-          sudo ln -s /usr/bin/chromedriver /usr/local/bin/chromedriver
+      - name: Build Docker image
+        run: docker build -t chatgpt-scraper .
           
       - name: Create .env file
         run: |
           cat > .env << EOL
-          CHROME_DRIVER_PATH=/usr/local/bin/chromedriver
           WEBSITE_URL=https://chat.openai.com
           WAIT_TIMEOUT=120 # Increased timeout
           REPO_PATH=.
@@ -58,15 +39,8 @@ jobs:
             echo "COOKIES_PATH=.github/cookies.json" >> .env
           fi
 
-          # Add CHROME_BINARY_PATH
-          if [ -n "${{ secrets.CHROME_BINARY_PATH }}" ]; then
-            echo "CHROME_BINARY_PATH=${{ secrets.CHROME_BINARY_PATH }}" >> .env
-          else
-            echo "CHROME_BINARY_PATH=/usr/bin/google-chrome" >> .env # Use the actual installation path
-          fi
-
-      - name: Run Selenium Scraper
-        run: python scrape_chatgpt.py
+      - name: Run scraper container
+        run: docker run --rm --env-file .env -v ${{ github.workspace }}:/app chatgpt-scraper
         continue-on-error: true
 
       - name: Check for changes

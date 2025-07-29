@@ -74,6 +74,17 @@ def test_compare_content(content_handler, create_test_files):
     assert changes['additions'] > 0
     assert 'diff_summary' in changes
 
+def test_diff_filters_dynamic_attrs(content_handler, tmp_path):
+    """Dynamic attributes should be ignored in diff."""
+    file1 = tmp_path / 'old.html'
+    file2 = tmp_path / 'new.html'
+    file1.write_text('<html><body><div data-id="1" id="a">text</div></body></html>')
+    file2.write_text('<html><body><div data-id="2" id="b">text</div></body></html>')
+
+    changes = content_handler.compare_content(file1, file2)
+
+    assert changes['has_changes'] is False
+
 @patch('scrape_chatgpt.uc.ChromeOptions')
 @patch('scrape_chatgpt.uc.Chrome')
 def test_undetected_driver_setup(mock_chrome, mock_chrome_options_uc, config):
@@ -134,6 +145,24 @@ def test_regular_driver_setup(mock_chrome, mock_chrome_options_webdriver, mock_s
     scraper_no_binary_path.setup_regular_driver()
     # We expect binary_location to remain None if not set in config
     assert mock_options_instance_no_bp.binary_location is None
+
+@patch('scrape_chatgpt.ChromeDriverManager')
+@patch('scrape_chatgpt.webdriver.ChromeOptions')
+@patch('scrape_chatgpt.webdriver.Chrome')
+def test_regular_driver_setup_no_path(mock_chrome, mock_options, mock_manager, config):
+    """Ensure webdriver-manager is used when no path is provided."""
+    config.chrome_driver_path = None
+    mock_driver_instance = MagicMock()
+    mock_chrome.return_value = mock_driver_instance
+    mock_options_instance = MagicMock()
+    mock_options.return_value = mock_options_instance
+    mock_manager.return_value.install.return_value = '/tmp/driver'
+
+    scraper = SeleniumScraper(config)
+    scraper.setup_regular_driver()
+
+    mock_manager.return_value.install.assert_called_once()
+    mock_chrome.assert_called_once()
 
 # --- Tests for Login Functionality Integration ---
 

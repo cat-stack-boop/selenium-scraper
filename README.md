@@ -29,14 +29,12 @@ git clone <your-repo-url>
 cd selenium-scraper
 ```
 
-2. Install required packages:
+2. Install required packages (ChromeDriver is downloaded automatically):
 ```bash
 pip install -r requirements.txt
 ```
 
-3. Install ChromeDriver:
-   - Download the appropriate version for your Chrome browser from [ChromeDriver Downloads](https://sites.google.com/chromium.org/driver/)
-   - Place it in a location accessible by your system (e.g., `/usr/bin/chromedriver`)
+3. (Optional) Provide a custom ChromeDriver path via `CHROME_DRIVER_PATH` in your `.env` if you don't want `webdriver-manager` to handle it automatically.
 
 4. Create and configure the `.env` file:
 ```env
@@ -63,6 +61,15 @@ COMPARISON_OUTPUT=changes.json
 Run the script:
 ```bash
 python scrape_chatgpt.py
+```
+
+### Docker
+
+You can also run the scraper inside a container which bundles Chrome and the driver:
+
+```bash
+docker build -t chatgpt-scraper .
+docker run --env-file .env chatgpt-scraper
 ```
 
 The script will:
@@ -124,7 +131,7 @@ The change detection looks for meaningful differences while ignoring noise like:
 ### Running Tests
 
 ```bash
-python -m pytest tests/
+python -m pytest --cov=.
 ```
 
 ## Troubleshooting

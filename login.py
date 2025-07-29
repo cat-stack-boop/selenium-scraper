@@ -94,7 +94,9 @@ class LoginHandler:
         try:
             # Refresh page to apply cookies
             self.driver.refresh()
-            time.sleep(5)
+            WebDriverWait(self.driver, self.timeout).until(
+                EC.presence_of_element_located((By.TAG_NAME, "body"))
+            )
             
             # Check for login elements vs. logged in elements
             login_button = self.driver.find_elements(By.XPATH, "//button[contains(text(), 'Log in')]")
@@ -161,7 +163,9 @@ class LoginHandler:
             submit_button.click()
             
             # Wait for successful login
-            time.sleep(10)  # Give it time to process
+            WebDriverWait(self.driver, self.timeout).until(
+                EC.presence_of_element_located((By.XPATH, "//div[contains(@class, 'user-menu') or contains(@aria-label, 'User menu')]") )
+            )
             
             # Check if logged in
             return self.check_login_status()
