@@ -10,6 +10,11 @@ docker run --rm \
   chatgpt-scraper
 ```
 
+### GitHub secrets
+
+Add `OPENAI_USERNAME` and `OPENAI_PASSWORD` under **Settings → Secrets** so the
+CI workflow can authenticate without a local `.env` file.
+
 ### Debug mode (GUI)
 
 ```bash

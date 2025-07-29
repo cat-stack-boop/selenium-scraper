@@ -14,8 +14,8 @@ def cleanup_old_files(directory: str, days: int = 30) -> None:
                 if file_time < cutoff_date:
                     os.remove(filepath)
                     logging.info(f"Removed old file: {filepath}")
-    except Exception as e:
-        logging.error(f"Error during cleanup: {e}")
+    except Exception:
+        logging.exception("Error during cleanup")
 
 if __name__ == "__main__":
     cleanup_old_files("scraped_pages") 
