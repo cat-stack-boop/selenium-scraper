@@ -6,6 +6,9 @@ from dotenv import load_dotenv
 from fake_useragent import UserAgent
 from distutils.util import strtobool
 
+# Load environment variables from a .env file before accessing them
+load_dotenv()
+
 # ----------------------- runtime switches ----------------------------------
 HEADLESS = bool(strtobool(os.getenv("HEADLESS", "1")))  # accepts 0/1 yes/no true/false
 
@@ -40,7 +43,6 @@ class Config:
     
     @classmethod
     def from_env(cls) -> 'Config':
-        load_dotenv()
         return cls(
             chrome_driver_path=os.getenv('CHROME_DRIVER_PATH'),
             website_url=os.getenv('WEBSITE_URL', 'https://chat.openai.com'),
