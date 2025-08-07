@@ -1,4 +1,3 @@
-import os, random
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
@@ -36,7 +35,9 @@ def login(driver):
     wait.until(EC.presence_of_element_located((By.ID, "username"))).send_keys(
         OPENAI_USERNAME
     )
-    driver.find_element(By.ID, "password").send_keys(OPENAI_PASSWORD)
+    wait.until(EC.presence_of_element_located((By.ID, "password"))).send_keys(
+        OPENAI_PASSWORD
+    )
     driver.find_element(By.ID, "login").click()
     wait.until(EC.url_contains("/chat"))
     log.info("login complete")
