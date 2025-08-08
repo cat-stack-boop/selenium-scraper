@@ -78,21 +78,21 @@ class LoginHandler:
                 logger.warning("No cookies found in file")
                 return False
 
-        # Navigate to the base URL before adding cookies
-        self.driver.get(self.config.base_url)
-        WebDriverWait(self.driver, self.timeout).until(
-            EC.presence_of_element_located((By.TAG_NAME, "body"))
-        )
+            # Navigate to the base URL before adding cookies
+            self.driver.get(self.config.base_url)
+            WebDriverWait(self.driver, self.timeout).until(
+                EC.presence_of_element_located((By.TAG_NAME, "body"))
+            )
 
-        # Add cookies to driver after navigation completes
-        for cookie in cookies:
-            # Some cookies might cause issues if they have expiration in the past
-            if 'expiry' in cookie:
-                del cookie['expiry']
-            self.driver.add_cookie(cookie)
+            # Add cookies to driver after navigation completes
+            for cookie in cookies:
+                # Some cookies might cause issues if they have expiration in the past
+                if 'expiry' in cookie:
+                    del cookie['expiry']
+                self.driver.add_cookie(cookie)
 
-        logger.info(f"Cookies loaded from {cookies_path}")
-        return True
+            logger.info(f"Cookies loaded from {cookies_path}")
+            return True
         except Exception:
             logger.exception("Error loading cookies")
             return False
