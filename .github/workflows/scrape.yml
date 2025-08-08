@@ -28,6 +28,7 @@ jobs:
 
   scrape:
     runs-on: ubuntu-latest
+    if: ${{ secrets.OPENAI_USERNAME != '' && secrets.OPENAI_PASSWORD != '' }}
     needs: test
     strategy:
       matrix:
@@ -39,6 +40,10 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build & scrape (${{ matrix.chrome-channel }})
         run: |
+          if [ -z "${OPENAI_USERNAME}" ] || [ -z "${OPENAI_PASSWORD}" ]; then
+            echo "Secrets missing; skipping scrape."
+            exit 0
+          fi
           docker build --build-arg CHROME_CHANNEL=${{ matrix.chrome-channel }} -t scraper .
           docker run --rm \
             -e OPENAI_USERNAME \
